@@ -1,0 +1,380 @@
+<html>
+<head>
+<script type="text/javascript" language="Javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.4.4/jquery.min.js">
+</script>
+<link rel="stylesheet" href="http://code.jquery.com/ui/1.9.2/themes/base/jquery-ui.css">
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+    <script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.9.2/jquery-ui.min.js"></script>
+<script>
+
+$(document).ready(function()
+{
+  google.script.run.withSuccessHandler(validUser).userCheck();  
+  function validUser(result){
+    if(result!="false"){
+       $('#message').text("You are logged in as -"+result);  
+       $('#holding').text("View Status");
+       $('#nop').text("No of persons Accomodating:");
+       $('<input type="number" id="nopdata" title="No of persons accomodating">').appendTo('#nopspace');  
+       $('#gname').text("Name of the Guest/s:");
+       $('<input type="text" id="gdata1" title="Enter the guest name">').appendTo('#gnamespace');
+       $('#room').text("Available Rooms:");
+       $('#gphone').text("Contact Number:");
+       $('<input type="text" id="gdata3" pattern="[0-9]{10}" title="10 Digit Mobile number!">').appendTo('#gphonespace');   
+       $('#gaddr').text("Enter Guest Address (City):");
+       $('<input type="text" id="gdata2" title="Enter Guest City/Address">').appendTo('#gaddrspace');
+       $('#gdesc').text("Purpose of Visit:");
+       $('#facultyid').text("Accompanying Faculty ID:");
+       $('<input type="email" id="gdata5" title="xxx@bitsathy.ac.in">').appendTo('#facultyidspace');
+       $('<textarea rows="2" cols="30" id="gdata4"/>').appendTo('#gdescspace'); 
+       $('#form').hide();
+       $('<a class="myButton" id="proceed">Proceed</a>').appendTo('#buttonspace1').hide();
+       //Replace your script URL here.
+       $('<a href="https://script.google.com/a/macros/11111111111111111111111111111111/exec" class="myButton" id="exit">Exit</a>').appendTo('#buttonspace2').hide();
+       
+       $('#book').click(function(){ 
+           $('#book').hide(); 
+           $('#holding').hide();         
+           $('#from').text("From :");
+           $('<input type="text" id="fromdate">').appendTo('#fromspace');      
+           $('#to').text("To :");
+           $('<input type="text" id="todate">').appendTo('#tospace'); 
+           $('<a class="myButton" id="check">Check Availability</a>').appendTo('#checkspace'); 
+           
+           $('#fromdate').datepicker({numberOfMonths: 1,dateFormat: 'dd/mm/yy', minDate: 0,onSelect: changeOfDate}); 
+           $('#todate').datepicker({numberOfMonths: 1,dateFormat: 'dd/mm/yy', minDate: 0,onSelect: changeOfDate}); 
+           function changeOfDate(d,i){if((i.lastVal)&&(d!==i.lastVal)){ $('#check').show();  $('#form').hide();$('#proceed').hide();$('#exit').hide(); } } 
+  
+           function availability(rooms){  
+           var roomtype = [1,2];
+           var roomlist = [ {val : 0, text: 'House 1 - 1 Cot'}, {val : 1, text: 'House 2 - 2 Cots'}];
+           var count=rooms.length;
+           if(count < 1)    alert("Rooms not available for the above dates!");
+           else{
+              $('#check').hide();
+              $('#form').show();
+              $("#nopdata").keypress(function (e) {
+              if (e.which != 8 && e.which != 0 && (e.which < 48 || e.which > 57)) {
+               return false;
+              }
+              });
+
+              $('#proceed').show();        
+              $('#exit').show();   
+              $('#select_room').remove();
+              var select_rooms = $('<select id="select_room">').appendTo('#roomspace');
+              $(rooms).each(function(){
+              select_rooms.append($('<option>').attr('value',roomlist[this].val).text(roomlist[this].text));
+              });
+              var alerted = false;      
+              $('#gdata1').focus(function(){ 
+              if((!alerted)&&(((roomtype[$('#select_room').val()])!=($('#nopdata').val())))){
+                              alert("You have selected a room of "+roomtype[$('#select_room').val()]+" cot/s for "+$('#nopdata').val()+" person/s . Do you wish to continue ??");
+              alerted=true;
+              }
+              });
+          }
+     }//availability 
+  
+ 
+     $('#proceed').click(function(){
+       var guestdetails=[];
+       var datedetails=[];
+       guestdetails[0]=$('#select_room').val();
+       guestdetails[6]=$('#nopdata').val();
+       guestdetails[1]=$("#gdata1").val();
+      
+       function calenderResult(answer){alert(answer);}
+       if(($('#nopdata').val()!="")&&($('#gdata1').val()!="")&&(($('#gdata5').val()).toLowerCase().indexOf("@bitsathy.ac.in") >= 0)&&($('#gdata2').val()!="")&&(($('#gdata3').val()).length==10)&&(($('#gdata3').val()).match(/^\d+$/))&&($('#gdata4').val()!="")&&($('#fromdate').datepicker('getDate')!=null)&&($('#todate').datepicker('getDate')!=null))
+       {
+                   guestdetails[2]=$('#gdata2').val();
+                   guestdetails[3]=$('#gdata3').val(); 
+                   guestdetails[4]=$('#gdata4').val();
+                   guestdetails[5]=$('#gdata5').val(); 
+                   var from=$('#fromdate').datepicker('getDate');
+                   var to=$('#todate').datepicker('getDate');
+                   datedetails[0]=$.datepicker.formatDate('MM dd, yy', from);
+                   datedetails[1]=$.datepicker.formatDate('MM dd, yy', to);
+                   google.script.run.withSuccessHandler(calenderResult).calendarAction(guestdetails,datedetails,result); 
+       }
+      else   alert("All fields are mandatory!\nCheck if the details are proper!"); 
+      });//proceed click 
+        
+      $('#check').click(function(){
+      var from=$('#fromdate').datepicker('getDate');              
+      var to=$('#todate').datepicker('getDate');
+      var fromdate=$.datepicker.formatDate('MM dd, yy', from);
+      var todate=$.datepicker.formatDate('MM dd, yy', to);                      
+      if((fromdate=="")||(todate==""))    alert("Both dates are mandatory!");
+      else if(from>to) alert("Enter Dates Properly!");
+      else google.script.run.withSuccessHandler(availability).checkAvailability(fromdate,todate);
+      });//check_click
+    
+     });//book click
+     
+     $("#holding").click(function(){
+        google.script.run.withSuccessHandler(setBookedData).getBookedData(result); 
+        function setBookedData(data)
+        {
+           var count=1,temp=0;
+           $('#holding').hide();
+           $('#book').hide();
+           var row = data.split("$");
+           for(var i=0;i<row.length-1;i++,count++)
+           {
+             var col= row[i].split(",");
+             for(var k=0,temp=count*10;k<8;k++,temp++)
+             {
+                 $("#reportspace").append('<input type="text" class="reportbox" id="textbox'+temp+'" readonly/>');
+                 if(i==0)  $('#textbox'+temp).val(col[k]);
+                 else      $('#textbox'+temp).val(col[k+1]);
+             }
+             $('<a class="myButton" id="update'+i+'">Update</a>').appendTo('#reportspace');
+             $('<a class="myButton" id="delete'+i+'">Delete</a><br>').appendTo('#reportspace');
+           }
+           $('a').on('click', function() {
+           var current_click=$(this).attr('id');
+           if(current_click.indexOf("delete") >= 0)
+           {
+            var result = window.confirm('Are you sure to delete ?');
+            if (result == false) { e.preventDefault();  }
+            else
+            {
+              var dataid=current_click.substr(6);
+              var details=[];
+              details[0]=$('#textbox'+(dataid*10+10)).val();
+              details[1]=$('#textbox'+(dataid*10+11)).val();
+              details[3]=$('#textbox'+(dataid*10+13)).val();
+              details[2]=result;
+              google.script.run.withSuccessHandler(calenderResult).deleteEvent(details);
+              for(var k=0;k<8;k++)
+              {
+                 $('#textbox'+(dataid*10+(10+k))).attr("readonly", true);   
+                 $('#textbox'+(dataid*10+(10+k))).css('background-color', '#FF6A6A');
+              }
+              $('#update'+dataid).remove();
+              $('#delete'+dataid).remove();
+            }
+           }
+           if((current_click.indexOf("update") >= 0)&&($('#update'+current_click.substr(6)).text()=="Save"))
+           {
+             var dataid=current_click.substr(6);
+             var details=[];
+             details[0]=$('#textbox'+(dataid*10+10)).val();
+             details[1]=$('#textbox'+(dataid*10+13)).val(); 
+             details[2]=$('#textbox'+(dataid*10+14)).val(); 
+             details[3]=$('#textbox'+(dataid*10+15)).val(); 
+             details[4]=$('#textbox'+(dataid*10+16)).val(); 
+             details[5]=$('#textbox'+(dataid*10+17)).val(); 
+             details[6]=result;
+             details[7]=$('#textbox'+(dataid*10+11)).val();
+             details[8]=$('#textbox'+(dataid*10+12)).val();
+               
+             if((details[4].toLowerCase().indexOf("@bitsathy.ac.in") >= 0)&&(details[5].match(/^\d+$/))&&(details[5].length==10))
+             {
+                google.script.run.withSuccessHandler(calenderResult).updateEvent(details);
+                $('#textbox'+(dataid*10+13)).attr("readonly", true);  
+                $('#textbox'+(dataid*10+14)).attr("readonly", true); 
+                $('#textbox'+(dataid*10+15)).attr("readonly", true); 
+                $('#textbox'+(dataid*10+16)).attr("readonly", true); 
+                $('#textbox'+(dataid*10+17)).attr("readonly", true); 
+                $('#update'+dataid).text("Update");
+                alert("Updated Successfully");
+             }
+             else  alert("Check the format of Email & Contact No!");
+            }//save the updates
+            else if((current_click.indexOf("update") >= 0)&&($('#update'+current_click.substr(6)).text()=="Update"))
+            { 
+             var dataid=current_click.substr(6);
+             var details=[];
+             $('#textbox'+(dataid*10+13)).removeAttr("readonly"); 
+             $('#textbox'+(dataid*10+14)).removeAttr("readonly"); 
+             $('#textbox'+(dataid*10+15)).removeAttr("readonly"); 
+             $('#textbox'+(dataid*10+16)).removeAttr("readonly"); 
+             $('#textbox'+(dataid*10+17)).removeAttr("readonly"); 
+             $('#update'+dataid).text("Save");
+          }//enable update
+       
+       });//setbookeddata
+       }     
+     });//holdingclick
+     
+    }//if 
+    else   $('#message').text("Access Denied ! Try again with valid Email ID !");  
+ }//valid user
+});
+</script>
+<style>
+.ui-datepicker td.ui-state-disabled>span{background:#B1A5A5;}
+.ui-datepicker td.ui-state-disabled{opacity:100;}
+.myButton {
+	-moz-box-shadow:inset 0px 1px 0px 0px #bee2f9;
+	-webkit-box-shadow:inset 0px 1px 0px 0px #bee2f9;
+	box-shadow:inset 0px 1px 0px 0px #bee2f9;
+	background:-webkit-gradient(linear, left top, left bottom, color-stop(0.05, #63b8ee), color-stop(1, #468ccf));
+	background:-moz-linear-gradient(top, #63b8ee 5%, #468ccf 100%);
+	background:-webkit-linear-gradient(top, #63b8ee 5%, #468ccf 100%);
+	background:-o-linear-gradient(top, #63b8ee 5%, #468ccf 100%);
+	background:-ms-linear-gradient(top, #63b8ee 5%, #468ccf 100%);
+	background:linear-gradient(to bottom, #63b8ee 5%, #468ccf 100%);
+	filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#63b8ee', endColorstr='#468ccf',GradientType=0);
+	background-color:#63b8ee;
+	-moz-border-radius:6px;
+	-webkit-border-radius:6px;
+	border-radius:6px;
+	border:1px solid #3866a3;
+	display:inline-block;
+	cursor:pointer;
+	color:#14396a;
+	font-family:arial;
+	font-size:15px;
+	font-weight:bold;
+	padding:6px 24px;
+	text-decoration:none;
+	text-shadow:0px 1px 0px #7cacde;
+}
+  
+.myButton:hover {
+	background:-webkit-gradient(linear, left top, left bottom, color-stop(0.05, #468ccf), color-stop(1, #63b8ee));
+	background:-moz-linear-gradient(top, #468ccf 5%, #63b8ee 100%);
+	background:-webkit-linear-gradient(top, #468ccf 5%, #63b8ee 100%);
+	background:-o-linear-gradient(top, #468ccf 5%, #63b8ee 100%);
+	background:-ms-linear-gradient(top, #468ccf 5%, #63b8ee 100%);
+	background:linear-gradient(to bottom, #468ccf 5%, #63b8ee 100%);
+	filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#468ccf', endColorstr='#63b8ee',GradientType=0);
+	background-color:#468ccf;
+}
+.myButton:active {
+	position:relative;
+	top:1px;
+}
+
+.logout {
+	-moz-box-shadow:inset 0px 0px 0px -50px #bee2f9;
+	-webkit-box-shadow:inset 0px 0px 0px -50px #bee2f9;
+	box-shadow:inset 0px 0px 0px -50px #bee2f9;
+	background:-webkit-gradient(linear, left top, left bottom, color-stop(0.05, #b0102d), color-stop(1, #bd7171));
+	background:-moz-linear-gradient(top, #b0102d 5%, #bd7171 100%);
+	background:-webkit-linear-gradient(top, #b0102d 5%, #bd7171 100%);
+	background:-o-linear-gradient(top, #b0102d 5%, #bd7171 100%);
+	background:-ms-linear-gradient(top, #b0102d 5%, #bd7171 100%);
+	background:linear-gradient(to bottom, #b0102d 5%, #bd7171 100%);
+	filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#b0102d', endColorstr='#bd7171',GradientType=0);
+	background-color:#b0102d;
+	-moz-border-radius:42px;
+	-webkit-border-radius:42px;
+	border-radius:42px;
+	display:inline-block;
+	cursor:pointer;
+	color:#000000;
+	font-family:Arial;
+	font-size:13px;
+	font-weight:bold;
+	padding:2px 10px;
+	text-decoration:none;
+	text-shadow:0px 1px 0px #7cacde;
+}
+.logout:hover {
+	background:-webkit-gradient(linear, left top, left bottom, color-stop(0.05, #bd7171), color-stop(1, #b0102d));
+	background:-moz-linear-gradient(top, #bd7171 5%, #b0102d 100%);
+	background:-webkit-linear-gradient(top, #bd7171 5%, #b0102d 100%);
+	background:-o-linear-gradient(top, #bd7171 5%, #b0102d 100%);
+	background:-ms-linear-gradient(top, #bd7171 5%, #b0102d 100%);
+	background:linear-gradient(to bottom, #bd7171 5%, #b0102d 100%);
+	filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#bd7171', endColorstr='#b0102d',GradientType=0);
+	background-color:#bd7171;
+}
+.logout:active {
+	position:relative;
+	top:1px;
+}
+.holdings { 
+    background: white; 
+    border: 1px solid #ffa853; 
+    border-radius: 5px; 
+    box-shadow: 0 0 5px 3px #ffa853; 
+    color: #666; 
+    outline: none; 
+    height:23px; 
+    width: 100px; 
+  }
+.reportbox {
+    color: #000;
+    width: 110px;
+    padding: 6px 5px 6px 10px;
+    border-radius: 20px;
+    box-shadow: 0 1px 0 #ccc inset;
+    outline: 0;
+}
+html { 
+  background: url('http://www.freepptbackground.com/wp-content/uploads/2014/06/colored-lines-with-white-background.jpg') no-repeat center center fixed; 
+  -webkit-background-size: cover;
+  -moz-background-size: cover;
+  -o-background-size: cover;
+  background-size: cover;
+}
+</style>
+</head>
+
+<body>
+<center>
+<h2><b>GuestHouse Booking with NoDatabase</b></h2>
+<p id="message">Validating your id.....</p>
+<a href="https://www.google.com/accounts/Logout" class="logout">Logout</a>
+<!-- Replace your script URL here. -->
+<a href="https://script.google.com/a/macros/111111111111111111111111111111111111111111/exec" class="logout" id="home" >Take me Home</a>
+<table>
+<h4>
+<tr>
+<td><a class="myButton" id="book">Book New</a></td>
+<td align="right"><a class="myButton" id="holding">My Holdings</a></td>
+</tr>
+<div id="reportspace"></div>
+<tr>
+<td><p id="from"></td><td id="fromspace"></td>
+<td><p id="to"></td><td id="tospace"></td>
+</tr>
+</h4>
+</table>
+<form>
+<center><div width ="20" id="checkspace"></div></center>
+<div id="form">
+<table>
+<h4>
+<tr>
+<td id="room"></td>
+<td id="roomspace"></td>
+</tr>
+<tr>
+<td><p id="nop"></td>
+<td id="nopspace"></td>
+</tr>
+<tr>
+<td><p id="gname"></td>
+<td id="gnamespace"></td>
+</tr>
+<tr>
+<td><p id="gaddr"></td>
+<td id="gaddrspace"></td>
+</tr>
+<tr>
+<td><p id="gphone"></td>
+<td id="gphonespace"></td>
+</tr>
+<tr>
+<td><p id="gdesc"></td>
+<td id="gdescspace"></td>
+</tr>
+<tr>
+<td><p id="facultyid"></td>
+<td id="facultyidspace"></td>
+</tr>
+</h4>
+</table>
+</div>
+<div style="position:absolute; top: 630px; left: 500px;"id="buttonspace1"></div>
+<div style="position:absolute; top: 630px; left: 700px;"id="buttonspace2"></div>
+</form>
+</center>
+</body>
+</html>
